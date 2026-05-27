@@ -1,54 +1,112 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
+	"os"
+
+	"pizza-tracker/internals/models"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
-// OrderRequest represents the form data submitted by the browser.
-type OrderRequest struct {
-	Name  string `form:"name"  binding:"required,min=2"`
-	Pizza string `form:"pizza" binding:"required"`
-	Size  string `form:"size" binding:"required"`
-}
-// We define our options as global slices (arrays) in Go
+
+var db *gorm.DB
+
 var PizzaTypes = []string{"Margherita", "Pepperoni", "Vegetarian", "Hawaiian"}
 var PizzaSizes = []string{"Small", "Medium", "Large"}
 
-func main() {
-	router := gin.Default()
+func initDB() {
+	var err error
+	db, err = gorm.Open(sqlite.Open("pizza.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database: " + err.Error())
+	}
 
-	// 1. Tell Gin to load all template files inside the templates folder
+	db.AutoMigrate(&models.Order{}, &models.OrderItem{})
+}
+
+type OrderRequest struct {
+	Name  string `form:"name" binding:"required"`
+	Pizza string `form:"pizza" binding:"required"`
+	Size  string `form:"size" binding:"required"`
+}
+
+func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	initDB()
+
+	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 
-	// 2. Serve the HTML template on "/"
 	router.GET("/", func(c *gin.Context) {
-		// c.HTML renders the "order.tmpl" template.
-		// We pass our Go data using gin.H (a key-value map).
 		c.HTML(http.StatusOK, "order.html", gin.H{
 			"PizzaTypes": PizzaTypes,
 			"PizzaSizes": PizzaSizes,
 		})
 	})
-		// 3. POST /order - Receives the form submission
+
 	router.POST("/order", func(c *gin.Context) {
 		var form OrderRequest
-
-		// c.ShouldBind parses the form data and maps it into our 'form' struct variable
 		if err := c.ShouldBind(&form); err != nil {
-			// If validation fails (e.g., a field is missing), render the form again with an error
 			c.HTML(http.StatusOK, "order.html", gin.H{
 				"PizzaTypes": PizzaTypes,
 				"PizzaSizes": PizzaSizes,
-				"Error":      "Invalid submission! All fields are required.",
+				"Error":      "All fields are required!",
 			})
 			return
 		}
 
-		// If successful, render the form and show a success message!
-		c.HTML(http.StatusOK, "order.html", gin.H{
-			"PizzaTypes": PizzaTypes,
-			"PizzaSizes": PizzaSizes,
-			"Success":    "Thank you, " + form.Name + "! Your " + form.Size + " " + form.Pizza + " pizza has been ordered.",
+		
+		order := models.Order{
+			CustomerName: form.Name,
+			Status:       "Order placed",
+			Items: []models.OrderItem{
+				{
+					Pizza: form.Pizza,
+					Size:  form.Size,
+				},
+			},
+		}
+
+		if err := db.Create(&order).Error; err != nil {
+			c.HTML(http.StatusInternalServerError, "order.html", gin.H{
+				"PizzaTypes": PizzaTypes,
+				"PizzaSizes": PizzaSizes,
+				"Error":      "Failed to save order: " + err.Error(),
+			})
+			return
+		}
+
+		slog.Info("Order saved inside SQLite", "order_id", order.ID, "customer", order.CustomerName)
+		c.Redirect(http.StatusSeeOther, "/customer/"+order.ID)
+	})
+
+	router.GET("/customer/:id", func(c *gin.Context) {
+		orderID := c.Param("id")
+
+		var order models.Order
+		
+		if err := db.Preload("Items").First(&order, "id = ?", orderID).Error; err != nil {
+			c.String(http.StatusNotFound, "Order not found inside the database!")
+			return
+		}
+
+		var pizzaType, pizzaSize string
+		if len(order.Items) > 0 {
+			pizzaType = order.Items[0].Pizza
+			pizzaSize = order.Items[0].Size
+		}
+
+		c.HTML(http.StatusOK, "customer.html", gin.H{
+			"OrderID":      order.ID,
+			"CustomerName": order.CustomerName,
+			"PizzaType":    pizzaType,
+			"PizzaSize":    pizzaSize,
+			"Status":       order.Status,
 		})
 	})
 
