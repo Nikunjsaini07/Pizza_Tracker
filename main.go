@@ -110,5 +110,39 @@ func main() {
 		})
 	})
 
+		// 4. GET /admin - Admin Dashboard (Shows all orders)
+	router.GET("/admin", func(c *gin.Context) {
+		var orders []models.Order
+
+		// A. Fetch all orders from SQLite, order by newest first, and preload items
+		if err := db.Preload("Items").Order("created_at desc").Find(&orders).Error; err != nil {
+			c.String(http.StatusInternalServerError, "Failed to load orders: "+err.Error())
+			return
+		}
+
+		// B. Render admin.html template and inject the orders slice
+		c.HTML(http.StatusOK, "admin.html", gin.H{
+			"Orders": orders,
+		})
+	})
+
+	// 5. POST /admin/order/:id/update - Updates the order status
+	router.POST("/admin/order/:id/update", func(c *gin.Context) {
+		orderID := c.Param("id")
+		newStatus := c.PostForm("status") // Grab the selected status from the dropdown
+
+		// Update only the 'status' column of the matching Order row in SQLite
+		err := db.Model(&models.Order{}).Where("id = ?", orderID).Update("status", newStatus).Error
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Failed to update status: "+err.Error())
+			return
+		}
+
+		slog.Info("Order status updated in SQLite", "order_id", orderID, "new_status", newStatus)
+
+		// Redirect back to the admin page to see the changes!
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
 	router.Run(":8080")
 }
