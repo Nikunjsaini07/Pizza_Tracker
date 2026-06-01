@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Tracker - Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 40px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #d32f2f; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background-color: #f7f7f9; font-weight: bold; }
+        .status-select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+        .btn-update { padding: 6px 12px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-update:hover { background-color: #1b5e20; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🍕 Admin Dashboard - Order Management</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Pizza Item</th>
+                    <th>Current Status</th>
+                    <th>Change Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Loop through all orders fetched from GORM -->
+                {{range .Orders}}
+                <tr>
+                    <td><strong>{{.ID}}</strong></td>
+                    <td>{{.CustomerName}}</td>
+                    <td>
+                        {{range .Items}}
+                        {{.Size}} {{.Pizza}}<br>
+                        {{end}}
+                    </td>
+                    <td>{{.Status}}</td>
+                    <td>
+                        <!-- Form submits POST request to update status of this specific ID -->
+                        <form action="/admin/order/{{.ID}}/update" method="POST" style="display: flex; gap: 8px;">
+                            <select name="status" class="status-select">
+                                <option value="Order placed" {{if eq .Status "Order placed"}}selected{{end}}>Order placed</option>
+                                <option value="Preparing" {{if eq .Status "Preparing"}}selected{{end}}>Preparing</option>
+                                <option value="Baking" {{if eq .Status "Baking"}}selected{{end}}>Baking</option>
+                                <option value="Quality Check" {{if eq .Status "Quality Check"}}selected{{end}}>Quality Check</option>
+                                <option value="Ready" {{if eq .Status "Ready"}}selected{{end}}>Ready</option>
+                            </select>
+                            <button type="submit" class="btn-update">Update</button>
+                        </form>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #777; padding: 30px;">No orders in the database yet.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
