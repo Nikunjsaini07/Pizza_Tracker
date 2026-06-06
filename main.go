@@ -1,10 +1,10 @@
 package main
 
 import (
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
-
 	"pizza-tracker/internals/models"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +13,7 @@ import (
 )
 
 var db *gorm.DB
+var notifier = NewNotificationManager()
 
 var PizzaTypes = []string{"Margherita", "Pepperoni", "Vegetarian", "Hawaiian"}
 var PizzaSizes = []string{"Small", "Medium", "Large"}
@@ -23,7 +24,6 @@ func initDB() {
 	if err != nil {
 		panic("failed to connect database: " + err.Error())
 	}
-
 	db.AutoMigrate(&models.Order{}, &models.OrderItem{})
 }
 
@@ -60,7 +60,6 @@ func main() {
 			return
 		}
 
-		
 		order := models.Order{
 			CustomerName: form.Name,
 			Status:       "Order placed",
@@ -81,7 +80,7 @@ func main() {
 			return
 		}
 
-		slog.Info("Order saved inside SQLite", "order_id", order.ID, "customer", order.CustomerName)
+		slog.Info("Order saved inside SQLite", "order_id", order.ID)
 		c.Redirect(http.StatusSeeOther, "/customer/"+order.ID)
 	})
 
@@ -89,9 +88,8 @@ func main() {
 		orderID := c.Param("id")
 
 		var order models.Order
-		
 		if err := db.Preload("Items").First(&order, "id = ?", orderID).Error; err != nil {
-			c.String(http.StatusNotFound, "Order not found inside the database!")
+			c.String(http.StatusNotFound, "Order not found!")
 			return
 		}
 
@@ -110,28 +108,22 @@ func main() {
 		})
 	})
 
-		// 4. GET /admin - Admin Dashboard (Shows all orders)
 	router.GET("/admin", func(c *gin.Context) {
 		var orders []models.Order
-
-		// A. Fetch all orders from SQLite, order by newest first, and preload items
 		if err := db.Preload("Items").Order("created_at desc").Find(&orders).Error; err != nil {
 			c.String(http.StatusInternalServerError, "Failed to load orders: "+err.Error())
 			return
 		}
 
-		// B. Render admin.html template and inject the orders slice
 		c.HTML(http.StatusOK, "admin.html", gin.H{
 			"Orders": orders,
 		})
 	})
 
-	// 5. POST /admin/order/:id/update - Updates the order status
 	router.POST("/admin/order/:id/update", func(c *gin.Context) {
 		orderID := c.Param("id")
-		newStatus := c.PostForm("status") // Grab the selected status from the dropdown
+		newStatus := c.PostForm("status")
 
-		// Update only the 'status' column of the matching Order row in SQLite
 		err := db.Model(&models.Order{}).Where("id = ?", orderID).Update("status", newStatus).Error
 		if err != nil {
 			c.String(http.StatusInternalServerError, "Failed to update status: "+err.Error())
@@ -139,9 +131,38 @@ func main() {
 		}
 
 		slog.Info("Order status updated in SQLite", "order_id", orderID, "new_status", newStatus)
-
-		// Redirect back to the admin page to see the changes!
+		notifier.Notify("order:"+orderID, "order_updated")
 		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	router.GET("/notifications", func(c *gin.Context) {
+		orderID := c.Query("orderId")
+		if orderID == "" {
+			c.String(http.StatusBadRequest, "Missing orderId parameter")
+			return
+		}
+
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+
+		clientChan := make(chan string, 10)
+		key := "order:" + orderID
+
+		notifier.AddClient(key, clientChan)
+
+		defer func() {
+			notifier.RemoveClient(key, clientChan)
+			slog.Info("Customer client disconnected", "order_id", orderID)
+		}()
+
+		c.Stream(func(w io.Writer) bool {
+			if msg, ok := <-clientChan; ok {
+				c.SSEvent("message", msg)
+				return true
+			}
+			return false
+		})
 	})
 
 	router.Run(":8080")

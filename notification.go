@@ -51,6 +51,7 @@ func (n *NotificationManager) Notify(key, message string) {
 		select {
 		case client <- message: 
 		default: 
+		
 		}
 	}
 }
