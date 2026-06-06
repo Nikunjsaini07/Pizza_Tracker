@@ -5,8 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
 	"pizza-tracker/internals/models"
 
+	"github.com/gin-contrib/sessions"
+	gormsessions "github.com/gin-contrib/sessions/gorm"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -24,13 +27,43 @@ func initDB() {
 	if err != nil {
 		panic("failed to connect database: " + err.Error())
 	}
-	db.AutoMigrate(&models.Order{}, &models.OrderItem{})
+	db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.User{})
+
+	var count int64
+	db.Model(&models.User{}).Count(&count)
+	if count == 0 {
+		hashedPassword, _ := models.HashPassword("password123")
+		adminUser := models.User{
+			Username: "admin",
+			Password: hashedPassword,
+		}
+		db.Create(&adminUser)
+		slog.Info("Default admin user created!", "username", "admin", "password", "password123")
+	}
 }
 
 type OrderRequest struct {
-	Name  string `form:"name" binding:"required"`
-	Pizza []string `form:"pizza" binding:"required"`
-	Size  []string `form:"size" binding:"required"`
+	Name   string   `form:"name" binding:"required"`
+	Pizzas []string `form:"pizza" binding:"required"`
+	Sizes  []string `form:"size" binding:"required"`
+}
+
+type LoginRequest struct {
+	Username string `form:"username" binding:"required"`
+	Password string `form:"password" binding:"required"`
+}
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		userId := session.Get("userId")
+		if userId == nil {
+			c.Redirect(http.StatusSeeOther, "/login")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }
 
 func main() {
@@ -41,6 +74,9 @@ func main() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
+
+	store := gormsessions.NewStore(db, true, []byte("pizza-session-secret-key"))
+	router.Use(sessions.Sessions("pizza-tracker-session", store))
 
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "order.html", gin.H{
@@ -59,19 +95,19 @@ func main() {
 			})
 			return
 		}
-        var orderItems []models.OrderItem 
 
-		for i := 0; i < len(form.Pizza); i++ {
+		var orderItems []models.OrderItem
+		for i := 0; i < len(form.Pizzas); i++ {
 			orderItems = append(orderItems, models.OrderItem{
-				Pizza: form.Pizza[i],
-				Size:  form.Size[i],
+				Pizza: form.Pizzas[i],
+				Size:  form.Sizes[i],
 			})
 		}
 
 		order := models.Order{
 			CustomerName: form.Name,
 			Status:       "Order placed",
-			Items:        orderItems, 
+			Items:        orderItems,
 		}
 
 		if err := db.Create(&order).Error; err != nil {
@@ -96,59 +132,88 @@ func main() {
 			return
 		}
 
-		var pizzaType, pizzaSize string
-		if len(order.Items) > 0 {
-			pizzaType = order.Items[0].Pizza
-			pizzaSize = order.Items[0].Size
-		}
-
 		c.HTML(http.StatusOK, "customer.html", gin.H{
 			"OrderID":      order.ID,
 			"CustomerName": order.CustomerName,
-			"PizzaType":    pizzaType,
-			"PizzaSize":    pizzaSize,
+			"Items":        order.Items,
 			"Status":       order.Status,
 		})
 	})
 
-	router.GET("/admin", func(c *gin.Context) {
-		var orders []models.Order
-		if err := db.Preload("Items").Order("created_at desc").Find(&orders).Error; err != nil {
-			c.String(http.StatusInternalServerError, "Failed to load orders: "+err.Error())
+	router.GET("/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login.html", nil)
+	})
+
+	router.POST("/login", func(c *gin.Context) {
+		var form LoginRequest
+		if err := c.ShouldBind(&form); err != nil {
+			c.HTML(http.StatusOK, "login.html", gin.H{"Error": "Username and password required"})
 			return
 		}
 
-		c.HTML(http.StatusOK, "admin.html", gin.H{
-			"Orders": orders,
+		var user models.User
+		if err := db.First(&user, "username = ?", form.Username).Error; err != nil {
+			c.HTML(http.StatusOK, "login.html", gin.H{"Error": "Invalid username or password"})
+			return
+		}
+
+		if !user.CheckPassword(form.Password) {
+			c.HTML(http.StatusOK, "login.html", gin.H{"Error": "Invalid username or password"})
+			return
+		}
+
+		session := sessions.Default(c)
+		session.Set("userId", user.ID)
+		session.Save()
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	router.POST("/logout", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Clear()
+		session.Save()
+		c.Redirect(http.StatusSeeOther, "/login")
+	})
+
+	admin := router.Group("/admin")
+	admin.Use(AuthMiddleware())
+	{
+		admin.GET("", func(c *gin.Context) {
+			var orders []models.Order
+			if err := db.Preload("Items").Order("created_at desc").Find(&orders).Error; err != nil {
+				c.String(http.StatusInternalServerError, "Failed to load orders")
+				return
+			}
+			c.HTML(http.StatusOK, "admin.html", gin.H{"Orders": orders})
 		})
-	})
 
-	router.POST("/admin/order/:id/update", func(c *gin.Context) {
-		orderID := c.Param("id")
-		newStatus := c.PostForm("status")
+		admin.POST("/order/:id/update", func(c *gin.Context) {
+			orderID := c.Param("id")
+			newStatus := c.PostForm("status")
 
-		err := db.Model(&models.Order{}).Where("id = ?", orderID).Update("status", newStatus).Error
-		if err != nil {
-			c.String(http.StatusInternalServerError, "Failed to update status: "+err.Error())
-			return
-		}
+			err := db.Model(&models.Order{}).Where("id = ?", orderID).Update("status", newStatus).Error
+			if err != nil {
+				c.String(http.StatusInternalServerError, "Failed to update status")
+				return
+			}
 
-		slog.Info("Order status updated in SQLite", "order_id", orderID, "new_status", newStatus)
-		notifier.Notify("order:"+orderID, "order_updated")
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+			slog.Info("Order status updated in SQLite", "order_id", orderID, "new_status", newStatus)
+			notifier.Notify("order:"+orderID, "order_updated")
+			c.Redirect(http.StatusSeeOther, "/admin")
+		})
 
-	router.POST("/admin/order/:id/delete", func(c *gin.Context) {
-		orderID := c.Param("id")
-	
-		err := db.Delete(&models.Order{}, "id = ?", orderID).Error
-		if err != nil {
-			c.String(http.StatusInternalServerError, "Failed to delete order :  "+err.Error())
-			return
-		}
-		
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+		admin.POST("/order/:id/delete", func(c *gin.Context) {
+			orderID := c.Param("id")
+
+			if err := db.Delete(&models.Order{}, "id = ?", orderID).Error; err != nil {
+				c.String(http.StatusInternalServerError, "Failed to delete")
+				return
+			}
+
+			c.Redirect(http.StatusSeeOther, "/admin")
+		})
+	}
 
 	router.GET("/notifications", func(c *gin.Context) {
 		orderID := c.Query("orderId")
