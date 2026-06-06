@@ -44,25 +44,33 @@
         </div>
         {{end}}
         <form action="/order" method="POST">
+                        <!-- First Pizza Selection -->
             <div class="form-group">
-                <label for="name">Your Name:</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="pizza">Pizza Type:</label>
-                <select id="pizza" name="pizza" required>
+                <label>Pizza 1:</label>
+                <select name="pizza" required>
                     <option value="">-- Choose Pizza --</option>
-                    <!-- Go template loop: ranges over the list of PizzaTypes -->
                     {{range .PizzaTypes}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+                <select name="size" required style="margin-top: 5px;">
+                    <option value="">-- Choose Size --</option>
+                    {{range .PizzaSizes}}
                     <option value="{{.}}">{{.}}</option>
                     {{end}}
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="size">Size:</label>
-                <select id="size" name="size" required>
+            <!-- Second Pizza Selection -->
+            <div class="form-group" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                <label>Pizza 2:</label>
+                <select name="pizza" required>
+                    <option value="">-- Choose Pizza --</option>
+                    {{range .PizzaTypes}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+                <select name="size" required style="margin-top: 5px;">
                     <option value="">-- Choose Size --</option>
                     {{range .PizzaSizes}}
                     <option value="{{.}}">{{.}}</option>
