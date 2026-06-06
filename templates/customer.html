@@ -9,19 +9,46 @@
         .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; text-align: center; }
         h2 { color: #d32f2f; margin-top: 0; }
         .status-badge { display: inline-block; padding: 8px 16px; background-color: #ffe082; color: #b7791f; border-radius: 20px; font-weight: bold; margin: 15px 0; }
+        .details { text-align: left; background: #fafafa; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #eee; }
+        .details p { margin: 5px 0; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>🍕 Pizza Tracker</h2>
-        <p>Order ID: <strong>{{ .OrderID }}</strong></p>
-        <p>Customer Name: <strong>{{ .CustomerName }}</strong></p>
         
-        <div class="status-badge">
-            Status: Order Placed
+        <div class="status-badge" id="status-badge">
+            Status: {{ .Status }}
+        </div>
+
+        <div class="details">
+            <p><strong>Order ID:</strong> {{ .OrderID }}</p>
+            <p><strong>Customer Name:</strong> {{ .CustomerName }}</p>
+            <p><strong>Pizza ordered:</strong> {{ .PizzaSize }} {{ .PizzaType }}</p>
         </div>
         
-        <p>Your pizza is in the oven! Keep this page open to track updates.</p>
+        <p>This page updates automatically in real-time!</p>
     </div>
+
+    
+    <script>
+        const orderId = "{{.OrderID}}";
+
+        
+        const eventSource = new EventSource(`/notifications?orderId=${orderId}`);
+
+        eventSource.onmessage = function(event) {
+            console.log("Message received from Go:", event.data);
+            if (event.data === "order_updated") {
+                // Refresh the current page to display the new status
+                window.location.reload();
+            }
+        };
+
+        
+        eventSource.onerror = function() {
+            console.log("EventSource connection lost.");
+        };
+    </script>
 </body>
 </html>
