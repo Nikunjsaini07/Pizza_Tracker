@@ -29,8 +29,8 @@ func initDB() {
 
 type OrderRequest struct {
 	Name  string `form:"name" binding:"required"`
-	Pizza string `form:"pizza" binding:"required"`
-	Size  string `form:"size" binding:"required"`
+	Pizza []string `form:"pizza" binding:"required"`
+	Size  []string `form:"size" binding:"required"`
 }
 
 func main() {
@@ -59,16 +59,19 @@ func main() {
 			})
 			return
 		}
+        var orderItems []models.OrderItem 
+
+		for i := 0; i < len(form.Pizza); i++ {
+			orderItems = append(orderItems, models.OrderItem{
+				Pizza: form.Pizza[i],
+				Size:  form.Size[i],
+			})
+		}
 
 		order := models.Order{
 			CustomerName: form.Name,
 			Status:       "Order placed",
-			Items: []models.OrderItem{
-				{
-					Pizza: form.Pizza,
-					Size:  form.Size,
-				},
-			},
+			Items:        orderItems, 
 		}
 
 		if err := db.Create(&order).Error; err != nil {
