@@ -135,6 +135,18 @@ func main() {
 		c.Redirect(http.StatusSeeOther, "/admin")
 	})
 
+	router.POST("/admin/order/:id/delete", func(c *gin.Context) {
+		orderID := c.Param("id")
+	
+		err := db.Delete(&models.Order{}, "id = ?", orderID).Error
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Failed to delete order :  "+err.Error())
+			return
+		}
+		
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
 	router.GET("/notifications", func(c *gin.Context) {
 		orderID := c.Query("orderId")
 		if orderID == "" {
