@@ -48,10 +48,16 @@ func (n *NotificationManager) Notify(key, message string) {
 	defer n.mu.RUnlock()
 
 	for client := range n.clients[key] {
-		select {
-		case client <- message: 
-		default: 
-		
-		}
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// Ignore panics if the client channel was closed concurrently
+				}
+			}()
+			select {
+			case client <- message:
+			default:
+			}
+		}()
 	}
 }

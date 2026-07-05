@@ -11,7 +11,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	gormsessions "github.com/gin-contrib/sessions/gorm"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -74,6 +74,7 @@ func main() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
+	router.Static("/static", "./static")
 
 	store := gormsessions.NewStore(db, true, []byte("pizza-session-secret-key"))
 	router.Use(sessions.Sessions("pizza-tracker-session", store))
@@ -245,5 +246,5 @@ func main() {
 		})
 	})
 
-	router.Run(":8080")
+	router.Run(":8081")
 }
