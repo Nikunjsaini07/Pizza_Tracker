@@ -4,27 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pizza Tracker - Admin Dashboard</title>
-    <!-- Modern Fonts -->
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --accent-orange: #ff6b35;
-            --accent-red: #ef233c;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --input-bg: rgba(15, 23, 42, 0.6);
-            --input-border: rgba(255, 255, 255, 0.1);
+            --bg-color: #faf8f5;
+            --card-bg: rgba(255, 255, 255, 0.55);
+            --card-border: rgba(0, 0, 0, 0.15);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --accent-green-bg: rgba(34, 197, 94, 0.45);
+            --accent-green-hover: rgba(22, 163, 74, 0.85);
+            --accent-green-border: rgba(0, 0, 0, 0.2);
+            --accent-green-text: #166534;
+            --input-border: #4b5563;
+            --input-focus: #111827;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
+            background-color: var(--bg-color);
+            /* User provided image faded with low opacity overlay */
+            background-image: linear-gradient(rgba(250, 248, 245, 0.5), rgba(250, 248, 245, 0.5)), url('/static/bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
             color: var(--text-primary);
             min-height: 100vh;
             margin: 0;
@@ -42,42 +50,44 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1.5px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 20px;
         }
 
         .logo-section h1 {
-            font-family: 'Outfit', sans-serif;
             font-size: 1.8rem;
             font-weight: 800;
             margin: 0;
-            background: linear-gradient(to right, #ff9f43, #ff6b35, #ef233c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
         }
 
         .logo-section p {
             margin: 5px 0 0 0;
             font-size: 0.85rem;
             color: var(--text-secondary);
+            font-weight: 500;
         }
 
+        /* CVGeniee Logout Button style - Darker gray button */
         .logout-form button {
-            background: rgba(239, 35, 60, 0.15);
-            border: 1px solid rgba(239, 35, 60, 0.3);
-            color: #fca5a5;
+            background: transparent;
+            border: 1.5px solid #1f2937;
+            color: #1f2937;
             padding: 8px 16px;
-            border-radius: 8px;
+            border-radius: 4px;
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
+            text-transform: uppercase;
         }
 
         .logout-form button:hover {
-            background: var(--accent-red);
+            background: #1f2937;
             color: white;
-            box-shadow: 0 0 10px rgba(239, 35, 60, 0.4);
+            transform: scale(1.02);
         }
 
         /* Stats KPI Row */
@@ -90,26 +100,28 @@
 
         .stat-card {
             background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 20px;
             text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
 
         .stat-num {
-            font-family: 'Outfit', sans-serif;
             font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--accent-orange);
+            font-weight: 800;
+            color: var(--accent-green-text);
             margin-bottom: 4px;
         }
 
         .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 700;
         }
 
         /* Search and Filter */
@@ -120,28 +132,30 @@
         .search-input {
             width: 100%;
             padding: 12px 16px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 10px;
+            background: transparent;
+            border: 1.5px solid var(--input-border);
+            border-radius: 4px;
             color: var(--text-primary);
             font-size: 0.9rem;
             outline: none;
             box-sizing: border-box;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .search-input:focus {
-            border-color: var(--accent-orange);
-            box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.25);
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 1px var(--input-focus);
         }
 
         /* Table Card Container */
         .table-card {
             background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
-            border-radius: 20px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
 
         table {
@@ -151,20 +165,22 @@
         }
 
         th {
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(0, 0, 0, 0.02);
             padding: 16px 20px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #cbd5e1;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            border-bottom: 1.5px solid rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         td {
             padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            font-size: 0.88rem;
             vertical-align: middle;
+            color: var(--text-primary);
         }
 
         tr:last-child td {
@@ -176,68 +192,68 @@
         }
 
         tr.order-row:hover {
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: rgba(0, 0, 0, 0.01);
         }
 
         .order-id-link {
             font-family: monospace;
-            color: var(--accent-orange);
-            font-weight: 600;
+            color: var(--accent-green-text);
+            font-weight: 700;
             text-decoration: none;
             font-size: 0.95rem;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .order-id-link:hover {
-            color: #ff9f43;
+            color: var(--accent-green-hover);
             text-decoration: underline;
         }
 
         .items-cell {
             line-height: 1.5;
-            color: #cbd5e1;
         }
 
         .item-pill {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.08);
             padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 0.8rem;
+            border-radius: 4px;
+            font-size: 0.78rem;
             margin-right: 4px;
             margin-bottom: 4px;
+            font-weight: 500;
         }
 
         /* Status Badge Pills */
         .status-badge {
             display: inline-block;
             padding: 4px 10px;
-            border-radius: 12px;
+            border-radius: 4px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
-        .status-placed { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.2); }
-        .status-preparing { background: rgba(249, 115, 22, 0.15); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.2); }
-        .status-baking { background: rgba(234, 179, 8, 0.15); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.2); }
-        .status-quality { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.2); }
-        .status-ready { background: rgba(16, 185, 129, 0.15); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-placed { background: rgba(59, 130, 246, 0.12); color: #1e3a8a; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .status-preparing { background: rgba(249, 115, 22, 0.12); color: #7c2d12; border: 1px solid rgba(249, 115, 22, 0.2); }
+        .status-baking { background: rgba(234, 179, 8, 0.12); color: #713f12; border: 1px solid rgba(234, 179, 8, 0.2); }
+        .status-quality { background: rgba(168, 85, 247, 0.12); color: #581c87; border: 1px solid rgba(168, 85, 247, 0.2); }
+        .status-ready { background: var(--accent-green-bg); color: var(--accent-green-text); border: 1px solid var(--accent-green-border); }
 
         /* Form styling inside Table */
         .action-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .status-select {
             padding: 8px 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
+            background: transparent;
+            border: 1.5px solid var(--input-border);
+            border-radius: 4px;
             color: var(--text-primary);
             font-size: 0.85rem;
             outline: none;
@@ -246,43 +262,46 @@
         }
 
         .status-select option {
-            background-color: #1e1b4b;
-            color: white;
+            background-color: white;
+            color: var(--text-primary);
         }
 
+        /* CVGeniee styled button */
         .btn-update {
-            padding: 8px 14px;
-            background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-red) 100%);
-            border: none;
-            border-radius: 8px;
-            color: white;
+            padding: 8px 12px;
+            background-color: var(--accent-green-bg);
+            border: 1px solid var(--accent-green-border);
+            border-radius: 4px;
+            color: var(--accent-green-text);
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .btn-update:hover {
-            box-shadow: 0 4px 10px rgba(239, 35, 60, 0.3);
-            transform: translateY(-1px);
+            background-color: var(--accent-green-hover);
+            color: white;
+            transform: scale(1.02);
         }
 
         .btn-delete {
             padding: 6px 12px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            border-radius: 8px;
+            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: #b91c1c;
+            border-radius: 4px;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
+            text-transform: uppercase;
         }
 
         .btn-delete:hover {
-            background: #ef4444;
+            background: #dc2626;
             color: white;
-            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            transform: scale(1.02);
         }
     </style>
 </head>
@@ -306,18 +325,18 @@
                 <div class="stat-label">Total Orders</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num" id="stat-active" style="color: #60a5fa;">0</div>
+                <div class="stat-num" id="stat-active" style="color: #2563eb;">0</div>
                 <div class="stat-label">Active Orders</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num" id="stat-ready" style="color: #34d399;">0</div>
+                <div class="stat-num" id="stat-ready" style="color: #16a34a;">0</div>
                 <div class="stat-label">Ready for Pickup</div>
             </div>
         </div>
 
         <!-- Live Search Field -->
         <div class="filter-section">
-            <input type="text" id="search-input" class="search-input" placeholder="🔍 Filter orders by ID or customer name...">
+            <input type="text" id="search-input" class="search-input" placeholder="Filter orders by ID or customer name...">
         </div>
 
         <!-- Table Card -->
@@ -336,19 +355,17 @@
                     {{range .Orders}}
                     <tr class="order-row" data-status="{{.Status}}" data-customer="{{.CustomerName}}" data-id="{{.ID}}">
                         <td>
-                            <!-- Clickable link to open the customer-facing tracking page directly -->
                             <a href="/customer/{{.ID}}" target="_blank" class="order-id-link" title="Open customer tracker page">
                                 {{.ID}}
                             </a>
                         </td>
-                        <td><span style="font-weight: 500;">{{.CustomerName}}</span></td>
+                        <td><span style="font-weight: 600;">{{.CustomerName}}</span></td>
                         <td class="items-cell">
                             {{range .Items}}
                             <span class="item-pill">{{.Size}} {{.Pizza}}</span>
                             {{end}}
                         </td>
                         <td>
-                            <!-- Status Badges mapped directly from current status -->
                             <span class="status-badge" data-status-text="{{.Status}}">
                                 {{.Status}}
                             </span>
@@ -384,7 +401,6 @@
     </div>
 
     <script>
-        // Set CSS classes for status badges based on text content
         const statusClassMap = {
             "Order placed": "status-placed",
             "Preparing": "status-preparing",
@@ -400,7 +416,6 @@
             badge.classList.add(className);
         });
 
-        // Compute and render metrics dynamically
         function calculateStats() {
             const rows = document.querySelectorAll('.order-row');
             let total = 0;
@@ -422,7 +437,6 @@
             document.getElementById('stat-ready').textContent = ready;
         }
 
-        // Live filtering logic
         const searchInput = document.getElementById('search-input');
         searchInput.addEventListener('input', function(e) {
             const query = e.target.value.toLowerCase().trim();
@@ -440,7 +454,6 @@
             });
         });
 
-        // Initialize Stats
         calculateStats();
     </script>
 </body>

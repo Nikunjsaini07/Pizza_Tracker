@@ -4,35 +4,196 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pizza Tracker - Admin Login</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 100px; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; }
-        h2 { color: #d32f2f; margin-top: 0; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #d32f2f; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: #b71c1c; }
-        .error { color: #c62828; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 14px; }
+        :root {
+            --bg-color: #faf8f5;
+            --card-bg: rgba(255, 255, 255, 0.55);
+            --card-border: rgba(0, 0, 0, 0.15);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --accent-green-bg: rgba(34, 197, 94, 0.45);
+            --accent-green-hover: rgba(22, 163, 74, 0.85);
+            --accent-green-border: rgba(0, 0, 0, 0.2);
+            --accent-green-text: #166534;
+            --input-border: #4b5563;
+            --input-focus: #111827;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            /* User provided image faded with low opacity overlay */
+            background-image: linear-gradient(rgba(250, 248, 245, 0.5), rgba(250, 248, 245, 0.5)), url('/static/bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Glassmorphic White Card */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 
+                        0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: transparent;
+            border: 1.5px solid var(--input-border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 1px var(--input-focus);
+        }
+
+        /* CVGeniee Sage Green primary button */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-green-bg);
+            border: 1px solid var(--accent-green-border);
+            border-radius: 4px;
+            color: var(--accent-green-text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-green-hover);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .lock-icon {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: bounceLock 2s infinite alternate;
+        }
+
+        @keyframes bounceLock {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-5px); }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>🔒 Admin Login</h2>
-        {{if .Error}}
-        <div class="error">{{.Error}}</div>
-        {{end}}
-        <form action="/login" method="POST">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <span class="lock-icon">🔒</span>
+                <h1>Admin Login</h1>
+                <p>Authentication required to access panel</p>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+
+            <!-- Error Banner -->
+            {{if .Error}}
+            <div class="alert-error">
+                ⚠️ {{.Error}}
             </div>
-            <button type="submit">Log In</button>
-        </form>
+            {{end}}
+
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn-primary">Log In</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
